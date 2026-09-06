@@ -1,0 +1,22 @@
+# Render Infrastructure as Code Blueprint
+# Platform: https://render.com
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: thuma-mina-deliveries
+    runtime: static
+    buildCommand: npm run build
+    staticPublishPath: ./dist
+    pullRequestPreviewsEnabled: true
+    routes:
+      # Single Page Application (SPA) routing rule:
+      # Rewrites all requests to /index.html so client-side routing works on reload
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_SUPABASE_URL
+        sync: false
+      - key: VITE_SUPABASE_ANON_KEY
+        sync: false
