@@ -162,4 +162,50 @@
   - Frontend builds cleanly via `npm run build` and lints cleanly via `npm run lint`.
   - Zero hardcoded credentials or database secrets committed.
 
+---
+
+## Log ID: LOG-20260906-01
+- **Date:** 2026-09-06
+- **Type:** Implementation & Security
+- **Status:** Resolved / Verified
+- **Context:** Executing Phase 2: JWT Authentication, Role-Based Access Control, and Delivery Address Management.
+- **Problem:**
+  The backend required a complete, stateless authentication system, token verification, role-based protection decorators, and user profile management, along with address endpoints satisfying Soshanguve township navigation requirements (mandatory landmark descriptions).
+- **Investigation:**
+  Evaluated `Flask-JWT-Extended` with custom decorators (`@role_required`, `@admin_required`, `@vendor_or_admin_required`, `@driver_or_admin_required`). Evaluated password hashing mechanisms (`werkzeug.security.generate_password_hash` with PBKDF2:SHA256). Formulated validation rules for email, password strength, and township delivery landmarks.
+- **Solution:**
+  1. Implemented complete JWT authentication routes in `backend/app/routes/auth.py`:
+     - `POST /api/auth/register` with role creation and automatic driver profile initialization.
+     - `POST /api/auth/login` with email normalization and `check_password_hash`.
+     - `GET /api/auth/me` with addresses, driver stats, and vendor memberships.
+     - `PUT /api/auth/profile`, `PUT /api/auth/change-password`, and `POST /api/auth/verify`.
+  2. Implemented role-based decorators in `backend/app/utils/decorators.py` enforcing RBAC.
+  3. Implemented address management routes in `backend/app/routes/addresses.py` with mandatory township block and landmark validation.
+  4. Implemented vendor catalog and menu routes in `backend/app/routes/vendors.py` with integer ZAR cents pricing enforcement.
+  5. Implemented custom JWT error callbacks in `backend/app/__init__.py` for clean JSON responses.
+  6. Implemented typed frontend API client in `src/services/api.ts` with token management and simulation fallback.
+  7. Enhanced `src/components/SecurityTab.tsx` with an interactive Auth & JWT Console, Token Claims Inspector, and Soshanguve Address Manager.
+  8. Created automated test suite `backend/tests/test_domain_rules.py` with 5 passing domain validation tests.
+- **Files Affected:**
+  - `backend/app/__init__.py`
+  - `backend/app/routes/__init__.py`
+  - `backend/app/routes/auth.py`
+  - `backend/app/routes/addresses.py`
+  - `backend/app/routes/vendors.py`
+  - `backend/app/utils/__init__.py`
+  - `backend/app/utils/decorators.py`
+  - `backend/tests/test_domain_rules.py`
+  - `src/services/api.ts`
+  - `src/components/SecurityTab.tsx`
+  - `src/data/initialData.ts`
+  - `docs/SOURCE_OF_TRUTH.md`
+  - `docs/PROJECT_STATE.md`
+  - `docs/AI_HANDOFF.md`
+  - `docs/DEV_LOG.md`
+- **Verification:**
+  - 100% Python syntax validation across all 23 backend files via `py_compile`.
+  - 5/5 domain unit tests passed (`backend/tests/test_domain_rules.py`).
+  - Frontend compiled cleanly via `compile_applet` and verified via `lint_applet`.
+
+
 

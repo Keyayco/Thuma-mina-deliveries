@@ -431,3 +431,74 @@ Key security controls:
   - *Decision:* Adopt Python + Flask REST API with SQLAlchemy ORM and Alembic migrations, hosted on Render, connecting to serverless PostgreSQL on Neon in Frankfurt (`eu-central-1`).
   - *Rationale:* The Flask backend acts as the sole database gatekeeper, ensuring strict separation of concerns, secure server-side JWT authentication, flexible South African payment gateway integration, and high availability while preventing database credentials from ever leaking to client browsers.
 
+---
+
+## 14. REST API Endpoint Specification (Phase 2)
+
+All API requests and responses utilize JSON encoding (`Content-Type: application/json`). Protected routes require an `Authorization: Bearer <access_token>` header.
+
+### 14.1 Health & Connectivity
+- `GET /api/health`
+  - Public endpoint.
+  - Returns service status, region (`eu-central-1`), and PostgreSQL connectivity check.
+
+### 14.2 Authentication (`/api/auth`)
+- `POST /api/auth/register`
+  - Payload: `{ email, password, full_name, phone_number?, role? }`
+  - Validates email regex, password strength (min 6 characters), creates user record with salted password hash, initializes driver record if `role == 'driver'`.
+  - Returns: `{ message, access_token, token_type: "Bearer", user: { id, email, full_name, role, ... } }` (HTTP 201).
+- `POST /api/auth/login`
+  - Payload: `{ email, password }`
+  - Validates credentials via `check_password_hash`.
+  - Returns signed JWT access token with role and email claims (HTTP 200).
+- `GET /api/auth/me`
+  - Protected: `@jwt_required()`.
+  - Returns complete user profile, linked addresses, vendor memberships (if vendor), and driver profile (if driver) (HTTP 200).
+- `PUT /api/auth/profile`
+  - Protected: `@jwt_required()`.
+  - Payload: `{ full_name?, phone_number? }`.
+- `PUT /api/auth/change-password`
+  - Protected: `@jwt_required()`.
+  - Payload: `{ current_password, new_password }`.
+- `POST /api/auth/verify`
+  - Protected: `@jwt_required()`.
+  - Validates token claims and returns `{ valid: true, user_id, role, email }`.
+
+### 14.3 Delivery Addresses (`/api/users/addresses`)
+- `GET /api/users/addresses`
+  - Protected: `@jwt_required()`.
+  - Lists authenticated user's addresses ordered by default flag and creation date.
+- `POST /api/users/addresses`
+  - Protected: `@jwt_required()`.
+  - Payload: `{ township_block, landmark_description, label?, street_address?, is_default? }`.
+  - Validates that `township_block` and `landmark_description` are non-empty strings (mandated for township navigation).
+- `PUT /api/users/addresses/<id>`
+  - Protected: `@jwt_required()`.
+  - Updates specified address (enforces owner ID check).
+- `DELETE /api/users/addresses/<id>`
+  - Protected: `@jwt_required()`.
+  - Deletes address and automatically promotes remaining address to default if needed.
+- `PATCH /api/users/addresses/<id>/default`
+  - Protected: `@jwt_required()`.
+  - Sets specified address as active default.
+
+### 14.4 Vendor Catalog & Menus (`/api/vendors`)
+- `GET /api/vendors`
+  - Public. Query parameters: `block` (township block filter), `is_open` (boolean).
+- `GET /api/vendors/<id_or_slug>`
+  - Public. Returns vendor profile, categories, and operational metrics.
+- `GET /api/vendors/<id_or_slug>/menu`
+  - Public. Returns categorized menu items with prices in integer cents and real-time availability.
+- `POST /api/vendors`
+  - Protected: `@role_required(UserRole.ADMIN, UserRole.VENDOR)`.
+  - Registers new vendor and creates owner membership.
+- `POST /api/vendors/<vendor_id>/categories`
+  - Protected: `@vendor_or_admin_required`.
+- `POST /api/vendors/<vendor_id>/items`
+  - Protected: `@vendor_or_admin_required`.
+  - Enforces `price_cents` as positive integer.
+- `PATCH /api/vendors/<vendor_id>/items/<item_id>`
+  - Protected: `@vendor_or_admin_required`.
+  - In-stock / 86 toggle and price adjustment.
+
+

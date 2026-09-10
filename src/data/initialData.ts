@@ -51,24 +51,25 @@ export interface DriverSeed {
 
 export const TABLES_SCHEMA: TableSchema[] = [
   {
-    name: 'public.profiles',
+    name: 'public.users',
     category: 'core',
     rlsActive: true,
-    ruleTag: 'ROLE_BASED_RLS',
-    description: 'User accounts linked to auth.users with typed user_role and contact number.',
+    ruleTag: 'ROLE_BASED_RBAC',
+    description: 'User accounts managed by Flask REST API with salted/hashed passwords and typed user_role.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, references: 'auth.users.id', description: 'Primary key tied to Supabase Auth UID' },
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Primary key generated via UUIDv4' },
+      { name: 'email', type: 'VARCHAR(255)', isNullable: false, description: 'Unique user email address' },
       { name: 'role', type: 'user_role', isNullable: false, defaultVal: "'customer'", description: 'Enum: customer, vendor, driver, admin' },
-      { name: 'full_name', type: 'TEXT', isNullable: false, description: 'Display name' },
-      { name: 'phone_number', type: 'TEXT', isNullable: false, description: 'South African mobile (e.g., +27 82 123 4567)' },
+      { name: 'full_name', type: 'VARCHAR(255)', isNullable: false, description: 'Display name' },
+      { name: 'phone_number', type: 'VARCHAR(50)', isNullable: true, description: 'South African mobile (e.g., +27 82 123 4567)' },
       { name: 'is_active', type: 'BOOLEAN', isNullable: false, defaultVal: 'true', description: 'Operational account flag' },
       { name: 'created_at', type: 'TIMESTAMPTZ', isNullable: false, defaultVal: 'now()', description: 'Creation timestamp' },
       { name: 'updated_at', type: 'TIMESTAMPTZ', isNullable: false, defaultVal: 'now()', description: 'Last mutation timestamp' }
     ],
     policies: [
-      { role: 'customer', action: 'SELECT', rule: 'auth.uid() = id' },
-      { role: 'customer', action: 'UPDATE', rule: 'auth.uid() = id' },
-      { role: 'admin', action: 'ALL', rule: 'EXISTS (SELECT 1 FROM profiles WHERE id = auth.uid() AND role = "admin")' }
+      { role: 'customer', action: 'SELECT', rule: 'current_user.id == id' },
+      { role: 'customer', action: 'UPDATE', rule: 'current_user.id == id' },
+      { role: 'admin', action: 'ALL', rule: 'current_user.role == "admin"' }
     ]
   },
   {
@@ -78,18 +79,17 @@ export const TABLES_SCHEMA: TableSchema[] = [
     ruleTag: 'LANDMARK_MANDATORY',
     description: 'Delivery addresses with Soshanguve township block and mandatory landmark description.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, defaultVal: 'gen_random_uuid()', description: 'Unique address ID' },
-      { name: 'user_id', type: 'UUID', isForeign: true, references: 'public.profiles.id', description: 'Address owner' },
-      { name: 'label', type: 'TEXT', isNullable: false, description: 'Address nickname (Home, Work, Relative)' },
-      { name: 'township_section', type: 'TEXT', isNullable: false, description: 'Township block (e.g., Block L, Block TT)' },
-      { name: 'street_address', type: 'TEXT', isNullable: false, description: 'Street name or stand number' },
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Unique address ID' },
+      { name: 'user_id', type: 'UUID/String(36)', isForeign: true, references: 'public.users.id', description: 'Address owner' },
+      { name: 'label', type: 'VARCHAR(50)', isNullable: false, defaultVal: "'Home'", description: 'Address nickname (Home, Work, Relative)' },
+      { name: 'township_block', type: 'VARCHAR(100)', isNullable: false, description: 'Township block (e.g., Block L, Block TT)' },
+      { name: 'street_address', type: 'VARCHAR(255)', isNullable: true, description: 'Street name or stand number' },
       { name: 'landmark_description', type: 'TEXT', isNullable: false, description: 'Critical township navigation reference point' },
-      { name: 'contact_phone', type: 'TEXT', isNullable: false, description: 'Active phone on-site for delivery rider' },
       { name: 'is_default', type: 'BOOLEAN', isNullable: false, defaultVal: 'false', description: 'Default address indicator' }
     ],
     policies: [
-      { role: 'customer', action: 'ALL', rule: 'auth.uid() = user_id' },
-      { role: 'driver', action: 'SELECT', rule: 'EXISTS (SELECT 1 FROM orders WHERE delivery_address_id = addresses.id AND assigned_driver = auth.uid())' }
+      { role: 'customer', action: 'ALL', rule: 'current_user.id == address.user_id' },
+      { role: 'driver', action: 'SELECT', rule: 'order.assigned_driver_id == current_driver.id' }
     ]
   },
   {
@@ -99,18 +99,18 @@ export const TABLES_SCHEMA: TableSchema[] = [
     ruleTag: 'PUBLIC_READ',
     description: 'Storefront business entities operating in Soshanguve with prep metrics.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, defaultVal: 'gen_random_uuid()', description: 'Unique vendor ID' },
-      { name: 'name', type: 'TEXT', isNullable: false, description: 'Business trading name' },
-      { name: 'slug', type: 'TEXT', isNullable: false, description: 'URL-safe unique identifier' },
-      { name: 'township_section', type: 'TEXT', isNullable: false, description: 'Operating sector (e.g., Falala Plaza, Block BB)' },
-      { name: 'phone_number', type: 'TEXT', isNullable: false, description: 'Direct contact phone' },
-      { name: 'is_active', type: 'BOOLEAN', defaultVal: 'true', description: 'TMD platform listing approval' },
-      { name: 'is_accepting_orders', type: 'BOOLEAN', defaultVal: 'true', description: 'Live availability toggle' },
-      { name: 'estimated_prep_minutes', type: 'INTEGER', defaultVal: '25', description: 'Average order preparation turnaround' }
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Unique vendor ID' },
+      { name: 'name', type: 'VARCHAR(255)', isNullable: false, description: 'Business trading name' },
+      { name: 'slug', type: 'VARCHAR(255)', isNullable: false, description: 'URL-safe unique identifier' },
+      { name: 'township_block', type: 'VARCHAR(100)', isNullable: false, description: 'Operating sector (e.g., Falala Plaza, Block BB)' },
+      { name: 'phone', type: 'VARCHAR(50)', isNullable: false, description: 'Direct contact phone' },
+      { name: 'status', type: 'vendor_status', defaultVal: "'active'", description: 'Enum: pending, active, suspended' },
+      { name: 'is_open', type: 'BOOLEAN', defaultVal: 'true', description: 'Live availability toggle' },
+      { name: 'prep_time_minutes', type: 'INTEGER', defaultVal: '25', description: 'Average order preparation turnaround' }
     ],
     policies: [
-      { role: 'public', action: 'SELECT', rule: 'is_active = true' },
-      { role: 'vendor', action: 'UPDATE', rule: 'EXISTS (SELECT 1 FROM vendor_members WHERE vendor_id = vendors.id AND user_id = auth.uid())' }
+      { role: 'public', action: 'SELECT', rule: 'vendor.status == "active"' },
+      { role: 'vendor', action: 'UPDATE', rule: 'current_user.is_vendor_member(vendor.id)' }
     ]
   },
   {
@@ -120,16 +120,16 @@ export const TABLES_SCHEMA: TableSchema[] = [
     ruleTag: 'INTEGER_CENTS',
     description: 'Product items priced strictly in integer ZAR cents with instantaneous in-stock toggles.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, defaultVal: 'gen_random_uuid()', description: 'Menu item ID' },
-      { name: 'vendor_id', type: 'UUID', isForeign: true, references: 'public.vendors.id', description: 'Owning vendor' },
-      { name: 'category_id', type: 'UUID', isForeign: true, references: 'public.menu_categories.id', description: 'Menu section' },
-      { name: 'name', type: 'TEXT', isNullable: false, description: 'Item name (e.g., Kota Special, 2-Piece Chicken)' },
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Menu item ID' },
+      { name: 'vendor_id', type: 'UUID/String(36)', isForeign: true, references: 'public.vendors.id', description: 'Owning vendor' },
+      { name: 'category_id', type: 'UUID/String(36)', isForeign: true, references: 'public.menu_categories.id', description: 'Menu section' },
+      { name: 'name', type: 'VARCHAR(255)', isNullable: false, description: 'Item name (e.g., Kota Special, 2-Piece Chicken)' },
       { name: 'price_cents', type: 'INTEGER', isNullable: false, description: 'Price in South African cents (R45.00 = 4500)' },
       { name: 'is_available', type: 'BOOLEAN', defaultVal: 'true', description: 'Immediate 86/stockout toggle' }
     ],
     policies: [
-      { role: 'public', action: 'SELECT', rule: 'is_available = true' },
-      { role: 'vendor', action: 'ALL', rule: 'EXISTS (SELECT 1 FROM vendor_members WHERE vendor_id = menu_items.vendor_id AND user_id = auth.uid())' }
+      { role: 'public', action: 'SELECT', rule: 'menu_item.is_available == True' },
+      { role: 'vendor', action: 'ALL', rule: 'current_user.is_vendor_member(menu_item.vendor_id)' }
     ]
   },
   {
@@ -139,10 +139,10 @@ export const TABLES_SCHEMA: TableSchema[] = [
     ruleTag: 'ONE_VENDOR_RULE',
     description: 'Transactional orders strictly enforcing single-vendor fulfillment and state machine.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, defaultVal: 'gen_random_uuid()', description: 'Internal order UUID' },
-      { name: 'order_number', type: 'TEXT', isNullable: false, description: 'Human-readable ticket (e.g. TMD-260905-001)' },
-      { name: 'customer_id', type: 'UUID', isForeign: true, references: 'public.profiles.id', description: 'Ordering customer' },
-      { name: 'vendor_id', type: 'UUID', isForeign: true, references: 'public.vendors.id', description: 'Fulfilling vendor' },
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Internal order UUID' },
+      { name: 'order_number', type: 'VARCHAR(64)', isNullable: false, description: 'Human-readable ticket (e.g. TMD-260905-001)' },
+      { name: 'customer_id', type: 'UUID/String(36)', isForeign: true, references: 'public.users.id', description: 'Ordering customer' },
+      { name: 'vendor_id', type: 'UUID/String(36)', isForeign: true, references: 'public.vendors.id', description: 'Fulfilling vendor' },
       { name: 'status', type: 'order_status', defaultVal: "'pending'", description: 'pending, accepted, preparing, ready_for_pickup, out_for_delivery, delivered, rejected, cancelled' },
       { name: 'subtotal_cents', type: 'INTEGER', isNullable: false, description: 'Items total in ZAR cents' },
       { name: 'delivery_fee_cents', type: 'INTEGER', isNullable: false, description: 'Delivery fee in ZAR cents' },
@@ -151,10 +151,10 @@ export const TABLES_SCHEMA: TableSchema[] = [
       { name: 'payment_status', type: 'payment_status', defaultVal: "'pending'", description: 'pending, paid, failed, refunded' }
     ],
     policies: [
-      { role: 'customer', action: 'SELECT', rule: 'auth.uid() = customer_id' },
-      { role: 'vendor', action: 'SELECT', rule: 'EXISTS (SELECT 1 FROM vendor_members WHERE vendor_id = orders.vendor_id AND user_id = auth.uid())' },
-      { role: 'driver', action: 'SELECT', rule: 'EXISTS (SELECT 1 FROM deliveries WHERE order_id = orders.id AND driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid()))' },
-      { role: 'admin', action: 'ALL', rule: 'true' }
+      { role: 'customer', action: 'SELECT', rule: 'order.customer_id == current_user.id' },
+      { role: 'vendor', action: 'SELECT', rule: 'current_user.is_vendor_member(order.vendor_id)' },
+      { role: 'driver', action: 'SELECT', rule: 'order.delivery.driver.user_id == current_user.id' },
+      { role: 'admin', action: 'ALL', rule: 'current_user.role == "admin"' }
     ]
   },
   {
@@ -164,16 +164,16 @@ export const TABLES_SCHEMA: TableSchema[] = [
     ruleTag: 'DRIVER_ASSIGNMENT',
     description: 'Fulfillment and delivery dispatch records tracking driver handoff and cash collection.',
     fields: [
-      { name: 'id', type: 'UUID', isPrimary: true, defaultVal: 'gen_random_uuid()', description: 'Delivery record ID' },
-      { name: 'order_id', type: 'UUID', isForeign: true, references: 'public.orders.id', description: 'Order reference' },
-      { name: 'driver_id', type: 'UUID', isForeign: true, references: 'public.drivers.id', description: 'Assigned 2-bike driver' },
+      { name: 'id', type: 'UUID/String(36)', isPrimary: true, description: 'Delivery record ID' },
+      { name: 'order_id', type: 'UUID/String(36)', isForeign: true, references: 'public.orders.id', description: 'Order reference' },
+      { name: 'driver_id', type: 'UUID/String(36)', isForeign: true, references: 'public.drivers.id', description: 'Assigned 2-bike driver' },
       { name: 'status', type: 'delivery_status', defaultVal: "'assigned'", description: 'assigned, picked_up, delivered, failed' },
       { name: 'cash_collected_cents', type: 'INTEGER', defaultVal: '0', description: 'Physical cash received on drop-off' },
       { name: 'assigned_at', type: 'TIMESTAMPTZ', defaultVal: 'now()', description: 'Dispatch timestamp' }
     ],
     policies: [
-      { role: 'driver', action: 'ALL', rule: 'driver_id IN (SELECT id FROM drivers WHERE user_id = auth.uid())' },
-      { role: 'admin', action: 'ALL', rule: 'true' }
+      { role: 'driver', action: 'ALL', rule: 'delivery.driver.user_id == current_user.id' },
+      { role: 'admin', action: 'ALL', rule: 'current_user.role == "admin"' }
     ]
   }
 ];
