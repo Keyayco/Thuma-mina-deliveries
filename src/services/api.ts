@@ -124,25 +124,37 @@ class ApiClient {
 
     const url = `${API_BASE_URL.replace(/\/$/, '')}/${endpoint.replace(/^\//, '')}`;
 
+    let response: Response;
     try {
-      const response = await fetch(url, {
+      response = await fetch(url, {
         ...options,
         headers,
       });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || data.details || `HTTP error ${response.status}`);
+    } catch (networkErr: unknown) {
+      // If network fetch fails entirely (e.g. backend server is not running or unreachable)
+      if (import.meta.env.PROD) {
+        console.error(`[TMD API Client] Production network error reaching ${url}:`, networkErr);
+        throw new Error(`Unable to connect to Thuma Mina backend service at ${API_BASE_URL}. Please verify service status.`);
       }
-
-      return data as T;
-    } catch (err: unknown) {
-      // If network fetch fails (e.g. backend server running in separate container/not live yet),
-      // provide transparent simulation fallback so users can interact with UI seamlessly
-      console.warn(`[TMD API Client] Network request to ${url} encountered:`, err);
-      return this.handleFallback<T>(endpoint, options, err);
+      console.warn(`[TMD API Client] Dev server unreachable at ${url}, using local preview simulation:`, networkErr);
+      return this.handleFallback<T>(endpoint, options, networkErr);
     }
+
+    let data: any;
+    try {
+      data = await response.json();
+    } catch {
+      data = { error: `Server returned non-JSON response (status ${response.status})` };
+    }
+
+    if (!response.ok) {
+      // When the real backend responds with 4xx or 5xx, throw the server's error message.
+      // Do NOT fall back to simulation when the server explicitly rejected the request.
+      const errorMsg = data?.error || data?.details || `HTTP error ${response.status}`;
+      throw new Error(errorMsg);
+    }
+
+    return data as T;
   }
 
   /**

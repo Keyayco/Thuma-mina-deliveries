@@ -14,7 +14,7 @@ class Driver(db.Model):
 
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     user_id = db.Column(db.String(36), db.ForeignKey("profiles.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
-    vehicle_type = db.Column(db.Enum(VehicleType), default=VehicleType.MOTORBIKE, nullable=False)
+    vehicle_type = db.Column(db.Enum(VehicleType, name="vehicletype"), default=VehicleType.MOTORBIKE, nullable=False)
     license_plate = db.Column(db.String(50), nullable=True)
     is_online = db.Column(db.Boolean, default=False, nullable=False)
     current_orders_count = db.Column(db.Integer, default=0, nullable=False)

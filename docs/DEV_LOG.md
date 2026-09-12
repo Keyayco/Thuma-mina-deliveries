@@ -207,5 +207,76 @@
   - 5/5 domain unit tests passed (`backend/tests/test_domain_rules.py`).
   - Frontend compiled cleanly via `compile_applet` and verified via `lint_applet`.
 
+---
+
+## Log ID: LOG-20260906-02
+- **Date:** 2026-09-06
+- **Type:** Infrastructure & Deployment Verification
+- **Status:** Resolved / Audited
+- **Context:** Verifying TMD infrastructure readiness for Neon PostgreSQL (Frankfurt) and Render deployment prior to Phase 3.
+- **Problem:**
+  Need to determine whether TMD is genuinely ready to connect to and run against Neon and Render, auditing DATABASE_URL handling, Alembic migration validity, Flask API factory/health checks, Render blueprint configuration, frontend API client behavior, and security constraints.
+- **Investigation:**
+  1. Inspected `backend/app/config.py`: Verified `DATABASE_URL` is parsed and properly normalizes `postgres://` to `postgresql://`. No hardcoded credentials exist.
+  2. Inspected `backend/migrations/alembic.ini`: Found `script_location = backend/migrations` could fail when executed from within the `backend` directory. Updated to `script_location = %(here)s`.
+  3. Inspected models vs migration: Updated model Enum definitions to explicitly specify PostgreSQL enum type names matching Alembic `001_initial_schema.py`.
+  4. Inspected `render.yaml`: Found only the static frontend service was declared with obsolete Supabase envVars. Added the Python Flask backend web service (`thuma-mina-backend`) with Frankfurt region, preDeploy migrations, and Gunicorn start command.
+  5. Inspected `src/services/api.ts`: Found HTTP 4xx/5xx responses were caught by general try/catch and routed to mock simulation. Refined request handling so real HTTP errors are thrown to the UI, and disabled simulation in production.
+  6. Inspected authentication security: Disallowed self-assignment of `admin` role in `POST /api/auth/register` (returns HTTP 403). Added unit test to verify.
+- **Files Affected:**
+  - `render.yaml`
+  - `backend/migrations/alembic.ini`
+  - `backend/app/routes/auth.py`
+  - `backend/app/models/user.py`
+  - `backend/app/models/vendor.py`
+  - `backend/app/models/driver.py`
+  - `backend/app/models/order.py`
+  - `backend/app/models/delivery.py`
+  - `backend/app/models/payment.py`
+  - `src/services/api.ts`
+  - `backend/tests/test_domain_rules.py`
+  - `docs/DEV_LOG.md`
+- **Verification:**
+  - 6/6 tests passing in `backend/tests/test_domain_rules.py`.
+  - Frontend TypeScript compilation clean via `compile_applet` and `lint_applet`.
+
+---
+
+## Log ID: LOG-20260912-01
+- **Date:** 2026-09-12
+- **Type:** Runtime Compatibility & Render Deployment Fix
+- **Status:** Resolved / Verified
+- **Context:** Render deployment reached the Flask application successfully, but failed at startup due to Python runtime version.
+- **Problem:**
+  Render defaulted to Python 3.14.3, triggering:
+  `TypeError: Can't replace canonical symbol for 'firstlineno' with new int value 615`
+  The traceback occurred while importing SQLAlchemy 2.0.30 due to internal code object changes in Python 3.14.
+- **Investigation:**
+  Render supports explicit Python runtime selection via `.python-version` files and the `PYTHON_VERSION` environment variable. Pinned dependencies (Flask 3.0.3, SQLAlchemy 2.0.30, psycopg2-binary 2.9.9, Werkzeug 3.0.3) are thoroughly tested and stable on Python 3.12.x.
+- **Solution:**
+  1. Updated `render.yaml` with `PYTHON_VERSION: 3.12.8`.
+  2. Created `backend/.python-version` with `3.12.8` (matching service `rootDir: backend`).
+  3. Created root `/.python-version` with `3.12.8` (for repo-level pyenv detection).
+  4. Created `backend/runtime.txt` and `/runtime.txt` with `python-3.12.8`.
+  5. Maintained existing dependency stack in `backend/requirements.txt`.
+  6. Verified backend configuration:
+     - Root Directory: `backend`
+     - Build Command: `pip install -r requirements.txt`
+     - Pre-Deploy Command: `flask db upgrade`
+     - Start Command: `gunicorn --bind 0.0.0.0:$PORT run:app`
+- **Files Affected:**
+  - `render.yaml`
+  - `backend/.python-version`
+  - `.python-version`
+  - `backend/runtime.txt`
+  - `runtime.txt`
+  - `docs/DEV_LOG.md`
+  - `docs/PROJECT_STATE.md`
+  - `docs/AI_HANDOFF.md`
+- **Verification:**
+  - 6/6 tests passing in `backend/tests/test_domain_rules.py`.
+  - Frontend compilation clean via `compile_applet` and `lint_applet`.
+
+
 
 

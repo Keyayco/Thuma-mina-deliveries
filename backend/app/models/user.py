@@ -19,7 +19,7 @@ class User(db.Model):
     password_hash = db.Column(db.String(255), nullable=False)
     full_name = db.Column(db.String(255), nullable=False)
     phone_number = db.Column(db.String(20), nullable=True)
-    role = db.Column(db.Enum(UserRole), default=UserRole.CUSTOMER, nullable=False)
+    role = db.Column(db.Enum(UserRole, name="userrole"), default=UserRole.CUSTOMER, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 

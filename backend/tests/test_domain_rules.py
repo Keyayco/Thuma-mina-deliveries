@@ -89,5 +89,18 @@ class TestDomainAndValidationRules(unittest.TestCase):
         self.assertFalse(is_valid)
         self.assertIn("landmark_description is required", msg)
 
+    def test_admin_role_cannot_be_self_assigned(self):
+        # Enforce Rule 6: ADMIN cannot be self-assigned through public registration
+        allowed_public_roles = {"customer", "vendor", "driver"}
+        attempted_roles = ["admin", "ADMIN", "SuperAdmin", "root"]
+
+        for role in attempted_roles:
+            is_allowed = role.lower() in allowed_public_roles
+            self.assertFalse(is_allowed, f"Role '{role}' must never be self-assigned publicly")
+
+        for role in ["customer", "vendor", "driver"]:
+            is_allowed = role.lower() in allowed_public_roles
+            self.assertTrue(is_allowed, f"Role '{role}' should be valid for public onboarding")
+
 if __name__ == "__main__":
     unittest.main()

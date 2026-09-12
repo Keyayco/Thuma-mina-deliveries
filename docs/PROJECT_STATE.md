@@ -1,23 +1,23 @@
 # PROJECT STATE — Thuma Mina Deliveries (TMD)
 
 > **Save State Snapshot**  
-> **Timestamp:** 2026-09-06T16:25:00Z  
-> **Current Version:** 0.3.0-phase2  
+> **Timestamp:** 2026-09-12T13:00:00Z  
+> **Current Version:** 0.3.1-deploy-fix  
 > **Authority Level:** Tier 3
 
 ---
 
 ## 1. Project Health & Snapshot
 
-- **Current Phase:** Phase 2 — JWT Authentication, RBAC, & Address Subsystem (COMPLETED)
-- **Current Version:** 0.3.0-phase2
-- **Active Blockers:** None. Awaiting production Neon Frankfurt `DATABASE_URL` credentials for live migration execution.
+- **Current Phase:** Phase 2 Complete — Deployment & Runtime Compatibility Hardening
+- **Current Version:** 0.3.1-deploy-fix
+- **Active Blockers:** Awaiting redeploy under pinned Python 3.12.8 to verify Neon Frankfurt database connection.
 - **Frontend Status:** Operational React 19 + Tailwind CSS application at root `/src`. Interactive Auth Console, JWT Token Inspector, and Soshanguve Address Manager integrated into Security Tab. Configured with typed API client (`src/services/api.ts`).
 - **Backend Status:** Python Flask REST API operational in `backend/app` with application factory pattern (`create_app()`), CORS, SQLAlchemy ORM models (11 entities), Alembic migration configuration, complete JWT authentication endpoints (`/api/auth/*`), address management routes (`/api/users/addresses`), vendor catalog routes (`/api/vendors`), and `/api/health` endpoint.
-- **Database / Neon Status:** PostgreSQL hosted on Neon in Frankfurt region (`eu-central-1`). SQLAlchemy declarative models and initial Alembic migration `001_initial_schema.py` ready.
-- **Authentication Status:** Full JWT architecture implemented (Flask-JWT-Extended + Werkzeug pbkdf2:sha256 password hashing). Custom decorators `@role_required`, `@admin_required`, `@vendor_or_admin_required`, `@driver_or_admin_required` enforcing RBAC for `customer`, `vendor`, `driver`, and `admin`.
-- **Deployment Status:** Configured via root `render.yaml` for both Frontend Static Site and Backend Python Web Service (Gunicorn).
-- **Testing Status:** Clean frontend compilation via Vite; 100% backend Python compilation (`py_compile`), and 5 domain validation unit tests passing in `backend/tests/test_domain_rules.py`.
+- **Database / Neon Status:** PostgreSQL hosted on Neon in Frankfurt region (`eu-central-1`). SQLAlchemy declarative models and initial Alembic migration `001_initial_schema.py` ready. **Note: Neon database is not yet claimed as connected; live connection awaits redeployment under Python 3.12.8.**
+- **Authentication Status:** Full JWT architecture implemented (Flask-JWT-Extended + Werkzeug pbkdf2:sha256 password hashing). Custom decorators `@role_required`, `@admin_required`, `@vendor_or_admin_required`, `@driver_or_admin_required` enforcing RBAC for `customer`, `vendor`, `driver`, and `admin`. Public admin self-assignment explicitly blocked (HTTP 403).
+- **Deployment Status:** Backend runtime pinned to Python 3.12.8 via `render.yaml`, `backend/.python-version`, `/.python-version`, and `runtime.txt`. Resolves Python 3.14.3 SQLAlchemy 2.0.30 incompatibility (`TypeError: Can't replace canonical symbol for 'firstlineno'`). Configured with Gunicorn start command (`gunicorn --bind 0.0.0.0:$PORT run:app`), build command (`pip install -r requirements.txt`), and root directory (`backend`).
+- **Testing Status:** Clean frontend compilation via Vite (`compile_applet` and `lint_applet`); 6 domain validation unit tests passing in `backend/tests/test_domain_rules.py`.
 
 ---
 
@@ -39,14 +39,17 @@
 - [x] Vendor Catalog and categorized menu REST API implemented (`/api/vendors`).
 - [x] Frontend typed API client service created (`src/services/api.ts`) with Bearer token injection and simulation fallback.
 - [x] Interactive Auth Console, JWT Token Inspector, and Soshanguve Address Manager integrated into UI (`src/components/SecurityTab.tsx`).
-- [x] Domain validation test suite implemented (`backend/tests/test_domain_rules.py`) with 5 passing tests.
+- [x] Domain validation test suite implemented (`backend/tests/test_domain_rules.py`) with 6 passing tests.
+- [x] Pinned backend Python runtime to stable Python 3.12.8 in `render.yaml`, `backend/.python-version`, `/.python-version`, `backend/runtime.txt`, and `/runtime.txt`.
 - [x] Synchronized 4-tier documentation suite (`SOURCE_OF_TRUTH.md`, `PROJECT_STATE.md`, `AI_HANDOFF.md`, `DEV_LOG.md`).
 
 ### Current Work
-- Phase 2 successfully verified and committed.
+- Runtime compatibility fix applied; awaiting Render redeploy to reach Neon database connection stage.
+- **Phase 3 NOT started.**
 
 ### Next Task
-- Phase 3: Order Lifecycle State Machine, Single-Vendor Cart Enforcement, and Driver Dispatching REST APIs.
+- Verify Render deployment startup under Python 3.12.8 and execute initial Alembic migration against Neon Frankfurt.
+- Once database connection is proven live, proceed to Phase 3: Order Lifecycle State Machine, Single-Vendor Cart Enforcement, and Driver Dispatching REST APIs.
 
 ---
 
@@ -61,7 +64,7 @@
 | **Auth System** | Operational | Full JWT authentication with password hashing, role claims, and `@role_required` decorators. |
 | **Address Subsystem**| Operational | Township block and mandatory landmark description validation enforced. |
 | **Frontend Client** | Operational | React 19 + Tailwind CSS 4 dashboard with typed API client and interactive Auth Console. |
-| **Hosting Config** | Configured | `render.yaml` defines Flask Web Service + Static Site. |
+| **Hosting Config** | Pinned (3.12.8) | `render.yaml`, `.python-version`, and `runtime.txt` pin Python 3.12.8 for Gunicorn backend. |
 
 ---
 

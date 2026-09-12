@@ -46,9 +46,16 @@ def register():
         assigned_role = UserRole(role_str)
     except ValueError:
         return jsonify({
-            "error": f"Invalid role '{role_str}'. Valid roles: customer, vendor, driver, admin",
+            "error": f"Invalid role '{role_str}'. Valid registration roles: customer, vendor, driver",
             "status": 400
         }), 400
+
+    # Prevent privilege escalation: admin accounts cannot be self-assigned
+    if assigned_role == UserRole.ADMIN:
+        return jsonify({
+            "error": "Admin role cannot be self-assigned through public registration",
+            "status": 403
+        }), 403
 
     if User.query.filter_by(email=email).first():
         return jsonify({

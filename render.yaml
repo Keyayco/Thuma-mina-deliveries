@@ -3,20 +3,45 @@
 # Documentation: https://render.com/docs/blueprint-spec
 
 services:
+  # 1. Flask REST API Backend Service
   - type: web
-    name: thuma-mina-deliveries
+    name: thuma-mina-backend
+    runtime: python
+    region: frankfurt # Low-latency colocation with Neon PostgreSQL in Frankfurt (eu-central-1)
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    preDeployCommand: flask db upgrade
+    startCommand: gunicorn --bind 0.0.0.0:$PORT run:app
+    healthCheckPath: /api/health
+    envVars:
+      - key: DATABASE_URL
+        sync: false # Set in Render dashboard from Neon connection string
+      - key: SECRET_KEY
+        generateValue: true
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: FLASK_ENV
+        value: production
+      - key: FLASK_APP
+        value: run.py
+      - key: CORS_ORIGINS
+        value: "*" # Or set to https://thuma-mina-frontend.onrender.com once deployed
+      - key: PYTHON_VERSION
+        value: 3.12.8
+
+  # 2. React + Vite Frontend Static Site
+  - type: web
+    name: thuma-mina-frontend
     runtime: static
     buildCommand: npm run build
     staticPublishPath: ./dist
     pullRequestPreviewsEnabled: true
     routes:
       # Single Page Application (SPA) routing rule:
-      # Rewrites all requests to /index.html so client-side routing works on reload
       - type: rewrite
         source: /*
         destination: /index.html
     envVars:
-      - key: VITE_SUPABASE_URL
-        sync: false
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false
+      - key: VITE_API_URL
+        sync: false # Set in Render dashboard to https://thuma-mina-backend.onrender.com/api

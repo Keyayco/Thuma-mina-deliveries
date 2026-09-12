@@ -25,7 +25,7 @@ class Vendor(db.Model):
     email = db.Column(db.String(255), nullable=True)
     township_block = db.Column(db.String(50), nullable=False)
     landmark_description = db.Column(db.Text, nullable=False)
-    status = db.Column(db.Enum(VendorStatus), default=VendorStatus.ACTIVE, nullable=False)
+    status = db.Column(db.Enum(VendorStatus, name="vendorstatus"), default=VendorStatus.ACTIVE, nullable=False)
     prep_time_minutes = db.Column(db.Integer, default=25, nullable=False)
     is_open = db.Column(db.Boolean, default=True, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
@@ -58,7 +58,7 @@ class VendorMember(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     vendor_id = db.Column(db.String(36), db.ForeignKey("vendors.id", ondelete="CASCADE"), nullable=False, index=True)
     user_id = db.Column(db.String(36), db.ForeignKey("profiles.id", ondelete="CASCADE"), nullable=False, index=True)
-    member_role = db.Column(db.Enum(VendorMemberRole), default=VendorMemberRole.STAFF, nullable=False)
+    member_role = db.Column(db.Enum(VendorMemberRole, name="vendormemberrole"), default=VendorMemberRole.STAFF, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
 
     vendor = db.relationship("Vendor", back_populates="members")

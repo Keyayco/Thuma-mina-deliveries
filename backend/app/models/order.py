@@ -24,7 +24,7 @@ class Order(db.Model):
     customer_id = db.Column(db.String(36), db.ForeignKey("profiles.id", ondelete="RESTRICT"), nullable=False, index=True)
     vendor_id = db.Column(db.String(36), db.ForeignKey("vendors.id", ondelete="RESTRICT"), nullable=False, index=True)
     delivery_address_id = db.Column(db.String(36), db.ForeignKey("addresses.id", ondelete="RESTRICT"), nullable=False)
-    status = db.Column(db.Enum(OrderStatus), default=OrderStatus.PENDING, nullable=False, index=True)
+    status = db.Column(db.Enum(OrderStatus, name="orderstatus"), default=OrderStatus.PENDING, nullable=False, index=True)
     subtotal_cents = db.Column(db.Integer, nullable=False)
     delivery_fee_cents = db.Column(db.Integer, default=2000, nullable=False)  # Standard R20.00
     total_cents = db.Column(db.Integer, nullable=False)

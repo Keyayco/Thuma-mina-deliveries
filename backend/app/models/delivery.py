@@ -17,7 +17,7 @@ class Delivery(db.Model):
     id = db.Column(db.String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
     order_id = db.Column(db.String(36), db.ForeignKey("orders.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
     driver_id = db.Column(db.String(36), db.ForeignKey("drivers.id", ondelete="SET NULL"), nullable=True, index=True)
-    status = db.Column(db.Enum(DeliveryStatus), default=DeliveryStatus.PENDING, nullable=False)
+    status = db.Column(db.Enum(DeliveryStatus, name="deliverystatus"), default=DeliveryStatus.PENDING, nullable=False)
     pickup_time = db.Column(db.DateTime, nullable=True)
     delivered_time = db.Column(db.DateTime, nullable=True)
     delivery_notes = db.Column(db.Text, nullable=True)
