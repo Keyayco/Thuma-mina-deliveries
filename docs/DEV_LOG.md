@@ -277,6 +277,39 @@
   - 6/6 tests passing in `backend/tests/test_domain_rules.py`.
   - Frontend compilation clean via `compile_applet` and `lint_applet`.
 
+---
+
+## Log ID: LOG-20260912-02
+- **Date:** 2026-09-12
+- **Type:** Master Architecture Specification & Domain Modeling (v2.0.0)
+- **Status:** Completed / Documented
+- **Context:** Significant update to client business requirements received regarding pricing, payment thresholds, cash security, driver fleet constraints, vendor billing, refunds, disputes, operating hours, and operational auditing.
+- **Action Taken:**
+  1. Inspected existing repository structure, existing 11 database entities, and existing documentation.
+  2. Adhered strictly to the Critical Document Rule: updated authoritative `docs/SOURCE_OF_TRUTH.md` in place to version 2.0.0 without creating duplicate documents or deleting established requirements.
+  3. Integrated all 26 required architectural specifications:
+     - Distance-band delivery pricing (R38 per 5 km with ceiling rounding; snapshot stored per order).
+     - Cash on Delivery maximum limit of R250 (`MAX_CASH_ORDER_CENTS = 25000`) and customer 4-digit PIN verification.
+     - Driver maximum capacity of 3 concurrent active orders enforced server-side.
+     - Driver shift tracking, shift-end cash deposit reconciliation, and bounced delivery driver compensation.
+     - Vendor monthly order-count billing model completely separated from order transactions (no vendor order payouts).
+     - Multi-stage vendor onboarding and verification audit lifecycle.
+     - Dual-entity ratings model separating driver performance from vendor food quality.
+     - TMD operating hours availability ceiling (Mon–Fri 08:00–18:00, Sat–Sun 08:00–16:30, Public Holidays closed).
+     - In-app customer order-support communication stream ("Snapchat section" / order thread).
+     - Catalog of 6 explicit Open Decisions (`[OPEN DECISION]`).
+  4. Preserved architectural boundaries: Did NOT create database migrations or write application code yet.
+  5. Synchronized `docs/PROJECT_STATE.md` and `docs/AI_HANDOFF.md`.
+- **Files Affected:**
+  - `docs/SOURCE_OF_TRUTH.md`
+  - `docs/PROJECT_STATE.md`
+  - `docs/AI_HANDOFF.md`
+  - `docs/DEV_LOG.md`
+- **Verification:**
+  - Frontend verification via `compile_applet` clean.
+  - Python tests clean.
+
+
 
 
 
