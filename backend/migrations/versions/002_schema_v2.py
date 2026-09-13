@@ -97,15 +97,15 @@ def upgrade():
 
     # 2.7 deliveries: Add assignment timing, PIN verification, fault tracking, compensation
     op.add_column('deliveries', sa.Column('assigned_time', sa.DateTime(), nullable=True))
-    op.add_column('deliveries', sa.Column('pin_verified', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    op.add_column('deliveries', sa.Column('pin_verified', sa.Boolean(), nullable=True))
     op.add_column('deliveries', sa.Column('failure_reason', sa.String(length=50), nullable=True))
-    op.add_column('deliveries', sa.Column('driver_at_fault', sa.Boolean(), nullable=False, server_default=sa.text('true')))
+    op.add_column('deliveries', sa.Column('driver_at_fault', sa.Boolean(), nullable=True))
     op.add_column('deliveries', sa.Column('trip_compensation_cents', sa.Integer(), nullable=False, server_default='0'))
     op.create_check_constraint('ck_deliveries_trip_compensation_cents', 'deliveries', 'trip_compensation_cents >= 0')
 
     # 2.8 payments: Add EFT verification fields, cash handover reconciliation, and checks
     op.add_column('payments', sa.Column('payment_reference', sa.String(length=50), nullable=True))
-    op.add_column('payments', sa.Column('payment_reflected', sa.Boolean(), nullable=False, server_default=sa.text('false')))
+    op.add_column('payments', sa.Column('payment_reflected', sa.Boolean(), nullable=True))
     op.add_column('payments', sa.Column('proof_required', sa.Boolean(), nullable=False, server_default=sa.text('false')))
     op.add_column('payments', sa.Column('verified_by_user_id', sa.String(length=36), nullable=True))
     op.add_column('payments', sa.Column('verification_notes', sa.Text(), nullable=True))
@@ -144,7 +144,6 @@ def upgrade():
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('holiday_date', name='uq_public_holidays_holiday_date')
     )
-    op.create_index('ix_public_holidays_holiday_date', 'public_holidays', ['holiday_date'], unique=True)
 
     # 3.2 vendor_status_history (Vendor Governance & Lifecycle Audit)
     op.create_table(
@@ -158,7 +157,7 @@ def upgrade():
         sa.Column('changed_by_user_id', sa.String(length=36), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.ForeignKeyConstraint(['changed_by_user_id'], ['profiles.id'], ondelete='SET NULL'),
-        sa.ForeignKeyConstraint(['vendor_id'], ['vendors.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['vendor_id'], ['vendors.id'], ondelete='RESTRICT'),
         sa.PrimaryKeyConstraint('id')
     )
     op.create_index('ix_vendor_status_history_vendor_id', 'vendor_status_history', ['vendor_id'])
@@ -196,7 +195,6 @@ def upgrade():
         sa.CheckConstraint('order_count >= 0', name='ck_billing_order_count'),
         sa.CheckConstraint('calculated_fee_cents >= 0', name='ck_billing_fee_cents')
     )
-    op.create_index('ix_vendor_monthly_billings_invoice_number', 'vendor_monthly_billings', ['invoice_number'], unique=True)
     op.create_index('ix_vendor_monthly_billings_vendor_id', 'vendor_monthly_billings', ['vendor_id'])
     op.create_index('ix_vendor_monthly_billings_status', 'vendor_monthly_billings', ['status'])
 
@@ -341,16 +339,15 @@ def upgrade():
         sa.Column('driver_shielded', sa.Boolean(), nullable=False, server_default=sa.text('false')),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['customer_id'], ['profiles.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['customer_id'], ['profiles.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['driver_id'], ['drivers.id'], ondelete='SET NULL'),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['vendor_id'], ['vendors.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='RESTRICT'),
+        sa.ForeignKeyConstraint(['vendor_id'], ['vendors.id'], ondelete='RESTRICT'),
         sa.PrimaryKeyConstraint('id'),
         sa.UniqueConstraint('order_id', name='uq_ratings_order_id'),
         sa.CheckConstraint('driver_score IS NULL OR driver_score >= 0', name='ck_ratings_driver_score'),
         sa.CheckConstraint('vendor_score IS NULL OR vendor_score >= 0', name='ck_ratings_vendor_score')
     )
-    op.create_index('ix_ratings_order_id', 'ratings', ['order_id'], unique=True)
     op.create_index('ix_ratings_customer_id', 'ratings', ['customer_id'])
     op.create_index('ix_ratings_driver_id', 'ratings', ['driver_id'])
     op.create_index('ix_ratings_vendor_id', 'ratings', ['vendor_id'])
@@ -375,7 +372,7 @@ def upgrade():
         sa.Column('responded_at', sa.DateTime(), nullable=True),
         sa.Column('created_at', sa.DateTime(), nullable=False),
         sa.Column('updated_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['original_item_id'], ['order_items.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['proposed_menu_item_id'], ['menu_items.id'], ondelete='RESTRICT'),
         sa.PrimaryKeyConstraint('id')
@@ -395,7 +392,7 @@ def upgrade():
         sa.Column('media_url', sa.String(length=500), nullable=True),
         sa.Column('is_read', sa.Boolean(), nullable=False, server_default=sa.text('false')),
         sa.Column('created_at', sa.DateTime(), nullable=False),
-        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='CASCADE'),
+        sa.ForeignKeyConstraint(['order_id'], ['orders.id'], ondelete='RESTRICT'),
         sa.ForeignKeyConstraint(['sender_id'], ['profiles.id'], ondelete='RESTRICT'),
         sa.PrimaryKeyConstraint('id')
     )

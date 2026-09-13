@@ -54,8 +54,11 @@
 
 - [x] **Schema Design v2.0.1 Specification:** Produced `docs/SCHEMA_DESIGN_V2.md` mapping Version 2.0.1 architecture to an audited relational schema (12 existing tables audited, 7 extended, 9 new entities proposed, 4 rejected).
 - [x] **Final Schema Integrity Review (23-Point Audit):** Completed comprehensive integrity review of `docs/SCHEMA_DESIGN_V2.md`. Result: **PASS — SCHEMA READY FOR MIGRATION**.
-- [x] **Alembic Migration Revision Created:** Authored `backend/migrations/versions/002_schema_v2.py` (Revision `002_schema_v2`, down revision `001_initial_schema`).
+- [x] **Alembic Migration Revision Created & Safety-Corrected:** Authored and refined `backend/migrations/versions/002_schema_v2.py` (Revision `002_schema_v2`, down revision `001_initial_schema`).
   - Implements schema changes across 8 altered existing tables and creates 9 new domain tables.
+  - Implemented safety corrections: historical delivery/payment fields (`driver_at_fault`, `pin_verified`, `payment_reflected`) made nullable with no server default (no synthetic historical defaults).
+  - Protected historical records from silent deletion by converting foreign-key `ON DELETE CASCADE` to `RESTRICT` on operational tables (`vendor_status_history`, `ratings`, `order_substitutions`, `customer_order_messages`).
+  - Removed duplicate unique indexes on columns with named unique constraints (`public_holidays.holiday_date`, `vendor_monthly_billings.invoice_number`, `ratings.order_id`).
   - Implements PostgreSQL enum extensions (`vendorstatus`, `orderstatus`) and 6 new enums.
   - Adds check constraints, unique constraints, and partial unique index (`uq_driver_active_shift`).
   - Implements symmetrical downgrade logic with dependency-ordered table drops.
@@ -64,7 +67,7 @@
 
 ### Current Work
 - Schema Design V2 approved.
-- Alembic migration script `002_schema_v2.py` created and statically validated.
+- Alembic migration script `002_schema_v2.py` created, safety-corrected, and statically validated.
 - **NO database migration has been executed or applied.**
 - **NO Neon database changes occurred.**
 - **NO application code has been modified.**
@@ -84,7 +87,7 @@
 | **Architecture (v2.0.1)** | Approved Specification | Authoritative master specification in `docs/SOURCE_OF_TRUTH.md`. |
 | **Schema Design (v2.0.1)** | Drafted Specification | Audited relational schema specification in `docs/SCHEMA_DESIGN_V2.md`. |
 | **Database Models** | 12 Verified / 9 Proposed | Initial 12 models in place; 9 candidate models specified for migration phase. |
-| **Migration System** | Initialized (001 only) | Alembic `001_initial_schema.py` in place. No new migration created. |
+| **Migration System** | Migration Script Ready | Alembic `002_schema_v2.py` drafted & safety-corrected. NOT executed against Neon. |
 | **Backend API** | Operational (Phase 2) | Flask app factory, health check, CORS, auth, addresses, and vendor routes. |
 | **Auth System** | Operational | Full JWT authentication with password hashing, role claims, and RBAC decorators. |
 | **Address Subsystem**| Operational | Township block and mandatory landmark description validation enforced. |
