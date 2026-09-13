@@ -65,9 +65,18 @@
   - **Migration NOT executed.**
   - **Neon database NOT modified.**
 
+- [x] **Manual GitHub Actions Migration Workflow Configured:** Created `.github/workflows/migrate.yml` configured strictly for manual trigger (`workflow_dispatch`).
+  - Uses Python 3.12, installs dependencies from `backend/requirements.txt`, and runs in `backend` working directory.
+  - Reads connection string exclusively from GitHub Actions secret `DATABASE_URL` (no hardcoding/logging of credentials).
+  - Executes `flask db upgrade` and verifies that the live database reaches revision `002_schema_v2`.
+  - Does NOT trigger on push.
+  - **Migration NOT executed.**
+  - **Neon database NOT modified.**
+
 ### Current Work
 - Schema Design V2 approved.
 - Alembic migration script `002_schema_v2.py` created, safety-corrected, and statically validated.
+- Manual GitHub Actions migration workflow `.github/workflows/migrate.yml` configured.
 - **NO database migration has been executed or applied.**
 - **NO Neon database changes occurred.**
 - **NO application code has been modified.**
@@ -75,8 +84,8 @@
 - **NO deployment occurred.**
 
 ### Next Checkpoint
-- **ALEMBIC MIGRATION READY FOR REVIEW**
-- Following formal review, authorization may be granted to apply the migration in a controlled execution phase.
+- **MANUAL MIGRATION WORKFLOW READY FOR OPERATOR TRIGGER**
+- Workflow can be triggered manually via GitHub Actions (`workflow_dispatch`) once `DATABASE_URL` secret is populated in repository settings.
 
 ---
 
@@ -87,7 +96,7 @@
 | **Architecture (v2.0.1)** | Approved Specification | Authoritative master specification in `docs/SOURCE_OF_TRUTH.md`. |
 | **Schema Design (v2.0.1)** | Drafted Specification | Audited relational schema specification in `docs/SCHEMA_DESIGN_V2.md`. |
 | **Database Models** | 12 Verified / 9 Proposed | Initial 12 models in place; 9 candidate models specified for migration phase. |
-| **Migration System** | Migration Script Ready | Alembic `002_schema_v2.py` drafted & safety-corrected. NOT executed against Neon. |
+| **Migration System** | Workflow Configured | Alembic `002_schema_v2.py` ready; manual GitHub Actions workflow (`.github/workflows/migrate.yml`) configured. NOT executed against Neon. |
 | **Backend API** | Operational (Phase 2) | Flask app factory, health check, CORS, auth, addresses, and vendor routes. |
 | **Auth System** | Operational | Full JWT authentication with password hashing, role claims, and RBAC decorators. |
 | **Address Subsystem**| Operational | Township block and mandatory landmark description validation enforced. |

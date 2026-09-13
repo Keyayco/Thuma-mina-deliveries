@@ -1,0 +1,70 @@
+name: Manual Database Migration
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_revision:
+        description: 'Target Alembic revision to verify'
+        required: true
+        default: '002_schema_v2'
+
+jobs:
+  migrate:
+    name: Run Alembic Database Migration
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install backend dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Execute Alembic migration (flask db upgrade)
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FLASK_APP: run.py
+          FLASK_ENV: production
+        run: |
+          echo "Starting database migration upgrade against Neon..."
+          flask db upgrade
+          echo "flask db upgrade completed."
+
+      - name: Verify Alembic revision is at 002_schema_v2
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          FLASK_APP: run.py
+          FLASK_ENV: production
+        run: |
+          echo "Checking current database revision via Flask-Migrate..."
+          flask db current
+          python -c "
+import sys
+from app import create_app
+from app.extensions import db
+from alembic.migration import MigrationContext
+
+app = create_app('production')
+with app.app_context():
+    with db.engine.connect() as conn:
+        context = MigrationContext.configure(conn)
+        current_rev = context.get_current_revision()
+        print(f'Current database revision: {current_rev}')
+        target_rev = '${{ inputs.target_revision }}' or '002_schema_v2'
+        if current_rev != target_rev:
+            print(f'VERIFICATION FAILED: Expected revision {target_rev}, got {current_rev}')
+            sys.exit(1)
+        print(f'VERIFICATION SUCCESS: Confirmed database revision is at {target_rev}')
+"
